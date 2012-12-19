@@ -46,6 +46,7 @@ end
 local function setFps(capped_fps)
     set_dt = 1/capped_fps
     frame_time = love.timer.getMicroTime()
+    print('Capped to ',capped_fps)
 end
 
 -- Clamps a value between min/max bounds
@@ -108,8 +109,8 @@ function love.load()
   -- User can set the cap-value beetween 300 and 3.
   low_fps = 3 
   limit_fps = 300
-  max_fps = limit_fps
-  setFps(limit_fps)
+  max_fps = low_fps
+  setFps(max_fps)
 end
 
 function love.update(dt)
