@@ -24,7 +24,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 function love.conf(t)
   t.title = "Physics-based movement & Jump (Demo)"
   t.author = "Roland_Yonaba"
-  t.url = "https://github.com/Yonaba"
+  t.url = "https://github.com/Yonaba/character-physics-demo"
   t.version = "0.8.0"
   t.console = false
   t.screen.width = 800
