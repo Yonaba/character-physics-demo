@@ -26,7 +26,7 @@ function love.conf(t)
   t.author = "Roland_Yonaba"
   t.url = "https://github.com/Yonaba"
   t.version = "0.8.0"
-  t.console = true
+  t.console = false
   t.screen.width = 800
   t.screen.height = 600
   t.screen.fullscreen = false
