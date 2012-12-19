@@ -55,12 +55,12 @@ function Vec.__mul(a,b)
   return Vec(a.x * b.x, a.y * b.y)
 end
 
--- Set by component
+-- Sets by component
 function Vec:set(x,y)
   self.x, self.y = x, y
 end
 
--- Clear to zero
+-- Clears to zero
 function Vec:clear()
   self.x, self.y = 0, 0
 end
