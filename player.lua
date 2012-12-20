@@ -57,6 +57,8 @@ function Player:new(pos, vel, acc, w, h, mass, int)
   newPlayer.sumForces = Vec()
   newPlayer.hasJumped = false
   newPlayer.integrate = int or IEuler -- Default integrator used
+  newPlayer.trace = false
+  newPlayer.jump_curve = {}
   return setmetatable(newPlayer, Player)
 end
 
@@ -70,24 +72,41 @@ function Player:addVel(v)
   self.vel = self.vel + v
 end
 
+-- Updates curve plotting
+function Player:recordCurve(axis)
+  if self.trace then
+    -- Records position each dt for curve plotting
+    self.jump_curve[#self.jump_curve+1] = self.pos.x
+    self.jump_curve[#self.jump_curve+1] = self.pos.y
+  end
+  -- Stops recording position
+  local touchAxis = (self.pos.y + self.height >= axis)
+  if touchAxis then self.trace = false end
+end
+
 -- Updates player movement using an integrator
 function Player:update(dt, g, damping)
   self:integrate(dt, g, damping, vMax)
 end
 
--- Wraps player in the simulation space
+-- Wraps player into the simulation space
 function Player:wrap(left, right, top, bottom)
+  local oldx = self.pos.x
   self.pos.x = wrap(self.pos.x, left, right, self.width)  
   self.pos.y = clamp(self.pos.y, top, bottom, self.height)
+  -- The plot curve will not be drawn if coordinates were wrapped on x-axis
+  if self.pos.x ~= oldx then
+    self.trace = false
+    self.jump_curve = {}
+  end
 end
 
 -- Solves resting contact (touching ground level)
 -- Checks if the player hits a given ground level
 function Player:canJump(ground)
-  local isResting = (self.pos.y + self.height >= ground)
-  
+  local isResting = (self.pos.y + self.height >= ground)  
   -- Not true, but that's the trick we need
-  if isResting then self.vel.y = 0 end  
+  if isResting then self.vel.y = 0 end
   return isResting
 end
 
@@ -98,6 +117,25 @@ function Player:draw()
     'fill',
     self.pos.x, self.pos.y, 
     self.width, self.height)
+end
+
+-- Plots the jump parabola in the chart local space
+function Player:plotCurve(ox, oy)
+  -- Make sure we have enough vertices
+  if #self.jump_curve > 2 then
+    -- Use the initial position to translate 
+    -- coordinates into the local space
+    local x1 = self.jump_curve[1]
+    local y1 = self.jump_curve[2]
+    
+    -- Alters the transformation stack for curve plotting
+    love.graphics.push()
+    love.graphics.translate(ox-x1,oy-y1)
+    love.graphics.line(self.jump_curve)
+    
+    -- Restores the transformation stack
+    love.graphics.pop()
+  end
 end    
 
 return setmetatable(Player, 

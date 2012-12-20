@@ -33,34 +33,24 @@ local players
 local N_players = 0
 local showCommands
 local ground_level
-local limit_fps, max_fps, low_fps, set_dt, frame_time
+local fps, step_fps, limit_fps, max_fps, low_fps, set_dt, frame_time
+local chart_ox, chart_oy = 380, 350
+local real_curve
+
+-- Command keys
+local KEY_DEC_FPS = 'f'
+local KEY_INC_FPS = 'g'
+local KEY_JUMP = ' '
+local KEY_QUIT = 'escape'
+local KEY_MOVE_LEFT = 'left'
+local KEY_MOVE_RIGHT = 'right'
+local KEY_HIDE_INFO = 'tab'
 
 -- Counts available integrators and their names
 -- We'll spawn one agent per integrator
 for k,v in pairs(Integrator) do 
   N_players  = N_players + 1
   int_Functions[N_players] = {name = k , func = v}
-end
-
--- Sets the cap value for fps
-local function setFps(capped_fps)
-    set_dt = 1/capped_fps
-    frame_time = love.timer.getMicroTime()
-    print('Capped to ',capped_fps)
-end
-
--- Clamps a value between min/max bounds
-local clamp = function (v, min, max)
-  return v < min and min or (v > max and max or v)
-end
-
--- Draws a legend chart
-local draw_legend = function(agents)
-  for i = 1, N_players do
-    love.graphics.setColor(agents[i].color)
-    love.graphics.rectangle('fill',650, 30 + 15 * (i-1), 20, 10)
-    love.graphics.print(int_Functions[i].name,690,30 + 15 * (i-1))
-  end
 end
 
 -- Some colors
@@ -74,6 +64,39 @@ local color_chart = {
   {0, 0, 255, 255},
   {255, 255, 0, 255},
 }
+
+-- Sets the cap value for fps
+local function setFps(capped_fps)
+    set_dt = 1/capped_fps
+    frame_time = love.timer.getMicroTime()
+end
+
+-- Clamps a value between min/max bounds
+local clamp = function (v, min, max)
+  return v < min and min or (v > max and max or v)
+end
+
+-- Find the nearest multiple of m starting from n
+local nearestMultiple = function (n, m)
+  return n + (m - n % m)
+end
+
+-- Draws a legend chart
+local draw_legend = function(agents)
+  for i = 1, N_players do
+    love.graphics.setColor(agents[i].color)
+    love.graphics.rectangle('fill',650, 30 + 15 * (i-1), 20, 10)
+    love.graphics.print(int_Functions[i].name,690,30 + 15 * (i-1))
+  end
+end
+
+-- Draws chart
+local draw_chart = function(ox, oy)
+  love.graphics.setColor(WHITE)
+  love.graphics.line(ox, oy, ox, oy-200)
+  love.graphics.line(ox, oy, ox + 300, oy)
+  love.graphics.line(ox - 300, oy, ox, oy)
+end
 
 -- Sets the display font size
 love.graphics.setFont(love.graphics.newFont(10))
@@ -103,60 +126,87 @@ function love.load()
   F_Up = Vec(0,-300) -- Acts on an agent velocity for the current frame, for jump
   F_damping = 0.5 -- damping factor (varies between 0 and 1)
   
+  -- Display command keys control
   showCommands = true
   
-  -- FPS setting
+  -- FPS control settings
   -- User can set the cap-value beetween 300 and 3.
-  low_fps = 3 
-  limit_fps = 300
-  max_fps = low_fps
-  setFps(max_fps)
+  low_fps = 3   -- The lowest value
+  limit_fps = 300 -- The highest value
+  step_fps = 10  -- Step_value
+  max_fps = low_fps -- Tracks the current cap value
+  setFps(max_fps)  -- Starts at the lowest fps-value
 end
 
 function love.update(dt)
   frame_time = frame_time + set_dt
-  
+  fps = love.timer.getFPS()
   -- Left move
-  if love.keyboard.isDown('left') then
+  if love.keyboard.isDown(KEY_MOVE_LEFT) then
     for i = 1,N_players do 
+      -- To move agents, give them a constant impulse each frame
+      -- as long as the input key is held down
       players[i]:addForce(F_Left)
     end
   end
   -- Right move
-  if love.keyboard.isDown('right') then
-    for i = 1,N_players do   
+  if love.keyboard.isDown(KEY_MOVE_RIGHT) then
+    for i = 1,N_players do
+      -- To move agents, give them a constant impulse each frame
+      -- as long as the input key is held down
       players[i]:addForce(F_Right)
     end
   end
   -- Jump
-  if love.keyboard.isDown(' ') then    
+  if love.keyboard.isDown(KEY_JUMP) then   
     for i = 1,N_players do
-      if players[i]:canJump(ground_level) and not players[i].hasJumped then      
-        players[i]:addVel(F_Up)
+      if players[i]:canJump(ground_level) and not players[i].hasJumped then
+        -- For jump, we act upon the velocity vector
+        -- Only for the actual frame
+        players[i]:addVel(F_Up)        
         players[i].hasJumped = true
+        
+        -- Starts recording parabola for curve plotting
+        players[i].trace = true
+        players[i].jump_curve = {}
+        players[i].jump_curve[1] = players[i].pos.x
+        players[i].jump_curve[2] = players[i].pos.y        
       end
     end
   end
-  -- Update, wrap position in the window bounds
+  
+  -- Update agents, wraps them into the window bounds
   for i = 1,N_players do   
-    players[i]:update(dt, F_gravity, F_damping)  
+    players[i]:update(dt, F_gravity, F_damping)
     players[i]:wrap(0,W_W,0,ground_level)
-  end      
+    players[i]:recordCurve(ground_level) -- Curve plot recording
+  end
 end 
 
 function love.draw()
   -- Draws agents
-  for i = 1,N_players do players[i]:draw() end
+  for i = 1,N_players do 
+    players[i]:draw()
+    players[i]:plotCurve(chart_ox, chart_oy)
+  end
+  
   -- Draws ground
   love.graphics.setColor(WHITE)
   love.graphics.line(0,ground_level,W_W,ground_level)
   
+  -- Draws chart
+  draw_chart(chart_ox, chart_oy)
+  
   -- Draws info
-  love.graphics.print(('FPS/Cap: %d / %d'):format(love.timer.getFPS(), max_fps),10,10)
+  love.graphics.print(('Current : %d FPS'):format(fps),10,10)
+  love.graphics.print(('Current limit: %d FPS'):format(max_fps),10,20)
+  love.graphics.print(([[Increase/Decrease the FPS Limit using [%s][%s] keys. 
+                  FPS Limit will vary between [%d] and [%d] fps]])
+    :format(KEY_INC_FPS:upper(), KEY_DEC_FPS:upper(), low_fps, limit_fps),10,40)
   draw_legend(players)
   if showCommands then
     love.graphics.setColor(BROWN)
-    love.graphics.rectangle('fill',500,300,250,130)
+    love.graphics.rectangle('fill',500,400,250,130)
     love.graphics.setColor(WHITE)
     love.graphics.print([[Command keys:
     
@@ -166,7 +216,7 @@ function love.draw()
     [Space]: Jump
     [Tab]: Hide/Show command keys
     [Esc]: Quit
-    ]],510,310)
+    ]],510,410)
   end
   
   -- Fps capping
@@ -190,15 +240,15 @@ end
 
 function love.keypressed(k, u)
   -- Command keys
-  if k == 'f' then
-    max_fps = clamp(max_fps - 10, low_fps, limit_fps)   
+  if k == KEY_DEC_FPS then
+    max_fps = clamp(nearestMultiple(max_fps - step_fps-1,step_fps), low_fps, limit_fps)   
     setFps(max_fps)
-  elseif k == 'g' then
-    max_fps = clamp(max_fps + 10, low_fps, limit_fps)   
+  elseif k == KEY_INC_FPS then
+    max_fps = clamp(nearestMultiple(max_fps + 1,step_fps), low_fps, limit_fps)   
     setFps(max_fps)
-  elseif k == 'tab' then
+  elseif k == KEY_HIDE_INFO then
     showCommands = not showCommands
-  elseif k == 'escape' then
+  elseif k == KEY_QUIT then
     love.event.push('quit')
   end
 end
