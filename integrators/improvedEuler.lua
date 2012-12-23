@@ -27,7 +27,7 @@
 local function ImprovedEuler(agent, dt, g, damping, vmax)
   agent.sumForces = agent.sumForces + (g * agent.mass)
   agent.acc = agent.sumForces * agent.massInv
-  local new_vel = (agent.vel + agent.acc * dt) * (damping ^ dt)
+  local new_vel = (agent.vel + agent.acc * dt) * (1 - damping * dt)
   new_vel:clamp(vmax)
   agent.pos = agent.pos + (agent.vel + new_vel) * (0.5 * dt)  
   agent.vel = new_vel

@@ -116,7 +116,7 @@ function love.load()
     players[i].pos:set(40,ground_level - players[i].height)
     players[i].color = color_chart[i]
     -- Attach an unique integrator to each agent
-    players[i].integrate = int_Functions[i].func
+    --players[i].integrate = int_Functions[i].func
   end
  
   -- Forces
@@ -124,8 +124,8 @@ function love.load()
   F_Left = Vec(-100,0) -- Impulse/frame for left move
   F_Right = Vec(100,0) -- Impulse/frame for right move
   F_Up = Vec(0,-300) -- Acts on an agent velocity for the current frame, for jump
-  F_damping = 0.5 -- damping factor (varies between 0 and 1)
-  
+  F_damping = 0.4 -- damping factor (varies between 0 and 1)
+    
   -- Display command keys control
   showCommands = true
   
@@ -146,7 +146,9 @@ function love.update(dt)
     for i = 1,N_players do 
       -- To move agents, give them a constant impulse each frame
       -- as long as the input key is held down
-      players[i]:addForce(F_Left)
+      if players[i]:canJump(ground_level) then 
+        players[i]:addForce(F_Left)
+      end
     end
   end
   -- Right move
@@ -154,7 +156,9 @@ function love.update(dt)
     for i = 1,N_players do
       -- To move agents, give them a constant impulse each frame
       -- as long as the input key is held down
-      players[i]:addForce(F_Right)
+      if players[i]:canJump(ground_level) then
+        players[i]:addForce(F_Right)
+      end
     end
   end
   -- Jump

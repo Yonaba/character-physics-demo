@@ -27,7 +27,7 @@ local function ExplicitEuler(agent, dt, g, damping, vmax)
   agent.sumForces = agent.sumForces + (g * agent.mass)
   agent.pos = agent.pos + agent.vel * dt
   agent.acc = agent.sumForces * agent.massInv
-  agent.vel = (agent.vel + agent.acc * dt) * (damping ^ dt)
+  agent.vel = (agent.vel + agent.acc * dt) * (1 - damping * dt)
   agent.vel:clamp(vmax)
   agent.sumForces:clear()  
 end

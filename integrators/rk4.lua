@@ -46,7 +46,7 @@ local function RK4(agent, dt, g, damping, vmax)
   agent.acc = agent.sumForces * agent.massInv
   local dP, dV = rk4Eval(agent, dt)
   agent.pos = agent.pos + dP
-  agent.vel = (agent.vel + dV) * (damping ^ dt)
+  agent.vel = (agent.vel + dV) * (1 - damping * dt)
   agent.vel:clamp(vmax)
   agent.sumForces:clear()  
 end
