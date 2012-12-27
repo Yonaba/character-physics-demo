@@ -81,6 +81,12 @@ local nearestMultiple = function (n, m)
   return n + (m - n % m)
 end
 
+-- Z-sorting
+local sort = function(a,b) return a.height > b.height end
+function zSort(agents)
+  table.sort(players,sort)
+end
+
 -- Draws a legend chart
 local draw_legend = function(agents)
   for i = 1, N_players do
@@ -113,19 +119,26 @@ function love.load()
   players = {}
   for i = 1, N_players do
     players[i] = Player()
+    players[i].height = players[i].height + i * 10 - 35
     players[i].pos:set(40,ground_level - players[i].height)
     players[i].color = color_chart[i]
     -- Attach an unique integrator to each agent
-    --players[i].integrate = int_Functions[i].func
+    players[i].integrate = int_Functions[i].func
   end
+  
+  -- Perform z-sorting, for drawing
+  zSort(players)
  
   -- Forces
   F_gravity = Vec(0,300) -- Acceleration, doesn't takes into account the mass
   F_Left = Vec(-100,0) -- Impulse/frame for left move
   F_Right = Vec(100,0) -- Impulse/frame for right move
   F_Up = Vec(0,-300) -- Acts on an agent velocity for the current frame, for jump
-  F_damping = 0.4 -- damping factor (varies between 0 and 1)
-    
+  F_damping = 0.9 -- damping factor (varies between 0 and 1)
+  
+  -- Real curve plot
+  real_curve = {}
+  
   -- Display command keys control
   showCommands = true
   
@@ -135,12 +148,13 @@ function love.load()
   limit_fps = 300 -- The highest value
   step_fps = 10  -- Step_value
   max_fps = low_fps -- Tracks the current cap value
-  setFps(max_fps)  -- Starts at the lowest fps-value
+  setFps(low_fps)  -- Starts at the lowest fps-value
 end
 
 function love.update(dt)
   frame_time = frame_time + set_dt
   fps = love.timer.getFPS()
+  dt = math.min(dt, set_dt)
   -- Left move
   if love.keyboard.isDown(KEY_MOVE_LEFT) then
     for i = 1,N_players do 
@@ -162,7 +176,7 @@ function love.update(dt)
     end
   end
   -- Jump
-  if love.keyboard.isDown(KEY_JUMP) then   
+  if love.keyboard.isDown(KEY_JUMP) then
     for i = 1,N_players do
       if players[i]:canJump(ground_level) and not players[i].hasJumped then
         -- For jump, we act upon the velocity vector
@@ -177,20 +191,23 @@ function love.update(dt)
         players[i].jump_curve[2] = players[i].pos.y        
       end
     end
+    --real_curve = real_integrator(players[1].acc, players[1].vel, players[1].pos)
   end
   
   -- Update agents, wraps them into the window bounds
-  for i = 1,N_players do   
-    players[i]:update(dt, F_gravity, F_damping)
+  for i = 1,N_players do
+    players[i]:update(dt, F_gravity, F_damping, ground_level)    
     players[i]:wrap(0,W_W,0,ground_level)
     players[i]:recordCurve(ground_level) -- Curve plot recording
   end
+
 end 
 
 function love.draw()
   -- Draws agents
-  for i = 1,N_players do 
-    players[i]:draw()
+  
+  for i = 1,N_players do
+    players[i]:draw(int_Functions[i].name)
     players[i]:plotCurve(chart_ox, chart_oy)
   end
   

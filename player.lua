@@ -26,18 +26,18 @@ local Vec = require 'vector'
 local IEuler = (require 'integrator').IEuler
 
 -- Wraps value between min/max bounds
-local wrap = function (v, min, max)
+local wrapHorizontal = function (v, min, max)
   return v < min and max or (v > max and min or v)
 end
 
 -- Clamps value between min/max bounds
-local clamp = function (v, min, max, sz)
+local clampVertical = function (v, min, max, sz)
   sz = sz or 0
   return v < min and min or (v + sz > max and max - sz or v)
 end
 
 -- Maximum speed
-local vMax = 500
+local vMax = 200
 
 -- Player class
 local Player = {}
@@ -85,15 +85,17 @@ function Player:recordCurve(axis)
 end
 
 -- Updates player movement using an integrator
-function Player:update(dt, g, damping)
-  self:integrate(dt, g, damping, vMax)
+function Player:update(dt, g, damping, ground)
+  local k = self:canJump(ground) and damping or 0
+  self:integrate(dt, g, k, vMax)
+  self:solveRestingContact(ground)
 end
 
 -- Wraps player into the simulation space
 function Player:wrap(left, right, top, bottom)
   local oldx = self.pos.x
-  self.pos.x = wrap(self.pos.x, left, right, self.width)  
-  self.pos.y = clamp(self.pos.y, top, bottom, self.height)
+  self.pos.x = wrapHorizontal(self.pos.x, left, right)  
+  self.pos.y = clampVertical(self.pos.y, top, bottom, self.height)
   -- The plot curve will not be drawn if coordinates were wrapped on x-axis
   if self.pos.x ~= oldx then
     self.trace = false
@@ -104,19 +106,22 @@ end
 -- Solves resting contact (touching ground level)
 -- Checks if the player hits a given ground level
 function Player:canJump(ground)
-  local isResting = (self.pos.y + self.height >= ground)  
-  -- Not true, but that's the trick we need
-  if isResting then self.vel.y = 0 end
-  return isResting
+  return (self.pos.y + self.height >= ground)  
 end
 
+function Player:solveRestingContact(ground)
+  local isResting = self:canJump(ground)
+  if isResting then self.vel.y = 0 end
+end  
+
 -- Draws the player
-function Player:draw()
+function Player:draw(n)
   love.graphics.setColor(self.color)
   love.graphics.rectangle(
     'fill',
     self.pos.x, self.pos.y, 
     self.width, self.height)
+  love.graphics.print(n,self.pos.x,self.pos.y-20)
 end
 
 -- Plots the jump parabola in the chart local space
