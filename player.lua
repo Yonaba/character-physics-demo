@@ -36,9 +36,6 @@ local clampVertical = function (v, min, max, sz)
   return v < min and min or (v + sz > max and max - sz or v)
 end
 
--- Maximum speed
-local vMax = 200
-
 -- Player class
 local Player = {}
 Player.__index = Player
@@ -46,19 +43,18 @@ Player.__index = Player
 -- Inits a new player
 function Player:new(pos, vel, acc, w, h, mass, int)
   local newPlayer =  {
-    pos = pos or Vec(),
-    vel = vel or Vec(),
-    acc = acc or Vec(),
-    width = w or 16,
-    height = h or 32,
-  }
+    pos = pos or Vec(), vel = vel or Vec(), acc = acc or Vec(),
+    width = w or 16, height = h or 32 }
+  
   newPlayer.mass = mass or 1
   newPlayer.massInv = 1/newPlayer.mass
   newPlayer.sumForces = Vec()
   newPlayer.hasJumped = false
   newPlayer.integrate = int or IEuler -- Default integrator used
+  
   newPlayer.trace = false
   newPlayer.jump_curve = {}
+  newPlayer.vMax = 300 -- maximum speed authorized
   return setmetatable(newPlayer, Player)
 end
 
@@ -86,8 +82,8 @@ end
 
 -- Updates player movement using an integrator
 function Player:update(dt, g, damping, ground)
-  local k = self:canJump(ground) and damping or 0
-  self:integrate(dt, g, k, vMax)
+  local k = self:isOnGround(ground) and damping or 0
+  self:integrate(dt, g, k, self.vMax)
   self:solveRestingContact(ground)
 end
 
@@ -103,31 +99,30 @@ function Player:wrap(left, right, top, bottom)
   end
 end
 
--- Solves resting contact (touching ground level)
 -- Checks if the player hits a given ground level
-function Player:canJump(ground)
+function Player:isOnGround(ground)
   return (self.pos.y + self.height >= ground)  
 end
 
+-- Solves resting contact (when touching then ground level) 
 function Player:solveRestingContact(ground)
-  local isResting = self:canJump(ground)
+  local isResting = self:isOnGround(ground)
   if isResting then self.vel.y = 0 end
 end  
 
 -- Draws the player
-function Player:draw(n)
+function Player:draw(name)
   love.graphics.setColor(self.color)
-  love.graphics.rectangle(
-    'fill',
-    self.pos.x, self.pos.y, 
-    self.width, self.height)
-  love.graphics.print(n,self.pos.x,self.pos.y-20)
+  love.graphics.rectangle('fill', self.pos.x, self.pos.y, self.width, self.height)
+  love.graphics.print(name,self.pos.x,self.pos.y-20)
 end
 
 -- Plots the jump parabola in the chart local space
 function Player:plotCurve(ox, oy)
+
   -- Make sure we have enough vertices
   if #self.jump_curve > 2 then
+  
     -- Use the initial position to translate 
     -- coordinates into the local space
     local x1 = self.jump_curve[1]
