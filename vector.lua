@@ -65,6 +65,16 @@ function Vec:clear()
   self.x, self.y = 0, 0
 end
 
+-- Magnitude
+function Vec:mag()
+  return sqrt(self.x * self.x + self.y * self.y)
+end  
+
+-- Gets a copy of vector
+function Vec:clone()
+  return Vec(self.x, self.y)
+end  
+
 -- Clamping
 function Vec:clamp(max)
   if abs(self.x) > max then self.x = (self.x/abs(self.x)) * max end
