@@ -106,7 +106,7 @@ local draw_legend = function(agents)
   -- Headers
   love.graphics.printf('Accel',x+80,15,60,'right')
   love.graphics.printf('Vel',x+140,15,60,'right')
-  love.graphics.printf('Jmp peak',x+200,15,60,'right')
+  love.graphics.printf('Jmp height',x+200,15,60,'right')
   love.graphics.printf('Jmp range',x+260,15,60,'right')
   love.graphics.printf('Accur',x+320,15,60,'right')
   
