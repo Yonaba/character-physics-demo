@@ -34,7 +34,7 @@ function love.conf(t)
   t.screen.fsaa = 0
   t.modules.joystick = false
   t.modules.audio = false
-  t.modules.mouse = false
+  t.modules.mouse = true
   t.modules.sound = false
   t.modules.physics = false 
 end
