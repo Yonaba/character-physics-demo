@@ -86,7 +86,7 @@ local color_chart = {
 -- Sets the cap-value for framerate
 local function setFps(capped_fps)
     step_dt = 1/capped_fps
-    frame_time = love.timer.getMicroTime()
+    frame_time = love.timer.getTime()
 end
 
 -- Clamps a value between min/max bounds
@@ -385,7 +385,7 @@ function love.draw()
   end
   
   -- Fps capping
-  local this_time = love.timer.getMicroTime()  
+  local this_time = love.timer.getTime()  
   if frame_time <= this_time then
     frame_time = this_time
     return
