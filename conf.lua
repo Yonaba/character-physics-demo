@@ -25,16 +25,21 @@ function love.conf(t)
   t.title = "Physics-based movement & Jump (Demo)"
   t.author = "Roland_Yonaba"
   t.url = "https://github.com/Yonaba/character-physics-demo"
-  t.version = "0.9.0"
   t.console = false
-  t.window.width = 800
-  t.window.height = 600
-  t.window.fullscreen = false
-  t.window.vsync = false
-  t.window.fsaa = 0
+  
+  t.modules.video = false
+  t.modules.math = false
+  t.modules.thread = false
   t.modules.joystick = false
   t.modules.audio = false
-  t.modules.mouse = true
   t.modules.sound = false
-  t.modules.physics = false 
+  t.modules.physics = false
+  
+  local window = t.window or t.screen or {}
+  window.width = 800
+  window.height = 600
+  window.fullscreen = false
+  window.vsync = false
+  window.fsaa = 0
+  window.msaa = window.fsaa
 end
